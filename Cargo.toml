@@ -1,0 +1,8 @@
+[package]
+name = "wasmalloc"
+version = "0.1.0"
+authors = ["Daniel Salvadori <danaugrs@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+wasmer = "2.3.0"
