@@ -13,10 +13,13 @@
     ;; is called with a non-zero argument, and it never decreases.
     (global $next (mut i32) (i32.const 0))
 
-    ;; $alloc allocates a block of $size 32-bit words and returns the starting
-    ;; address of the allocated block. If $size is zero, nothing is allocated
-    ;; and zero is returned. The memory is grown if necessary.
-    (func $alloc (export "alloc") (param $size i32) (result i32)
+    ;; $alloc allocates a block of memory of the specified size.
+    ;; If $size is zero, nothing is allocated and zero is returned.
+    ;; The memory is grown if necessary.
+    (func $alloc (export "alloc")
+        (param $size i32) ;; size of the requested block (number of 32-bit words).
+        (result i32) ;; starting address of the allocated block.
+
         ;; If the requested $size is zero, just return zero.
         (if ;; $size == 0
             (i32.eqz (local.get $size))
@@ -82,8 +85,21 @@
         ;; Return the original $next (which is left in the stack).
     )
 
-    ;; $dealloc does nothing in this minimal implementation.
-    (func $dealloc (export "dealloc") (param $address i32))
+    ;; $realloc reallocates a previously allocated block with a new size.
+    ;; In this minimal implementation it simply allocates a new block.
+    (func $realloc (export "realloc")
+        (param $address i32) ;; starting address of the previously allocated block.
+        (param $size i32) ;; new size of the block (number of 32-bit words).
+        (result i32)
+        
+        (call $alloc (local.get $size))
+    )
+
+    ;; `dealloc` deallocates a previously allocated block.
+    ;; It does nothing in this minimal implementation.
+    (func $dealloc (export "dealloc")
+        (param $address i32) ;; starting address of the block to deallocate.
+    )
 
     ;; Auxiliary functions for testing.
     (func $store (export "store") (param $address i32) (param $value i32)

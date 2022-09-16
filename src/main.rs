@@ -26,6 +26,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let alloc_func = instance.exports.get_function("alloc").unwrap();
     let alloc = |s: i32| alloc_func.call(&[WasmerValue::I32(s)]);
 
+    let realloc_func = instance.exports.get_function("realloc").unwrap();
+    let realloc = |a: i32, s: i32| realloc_func.call(&[WasmerValue::I32(a), WasmerValue::I32(s)]);
+
     let dealloc_func = instance.exports.get_function("dealloc").unwrap();
     let dealloc = |a: i32| dealloc_func.call(&[WasmerValue::I32(a)]);
 

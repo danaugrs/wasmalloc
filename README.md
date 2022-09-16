@@ -12,14 +12,27 @@ The goal is to build several implementations of increasing complexity building u
 | [4_bins.wat](src/4_bins.wat) (TODO)           | Uses binning.                             | Good             | Good            |
 | [5_wasmalloc.wat](src/5_wasmalloc.wat) (TODO) | Uses complex optimizations.               | Great            | Great           |
 
-All implementations will be extensively commented and follow the same two-function interface:
+All implementations will be extensively commented and follow the same three-function interface:
 
 ```wasm
-;; $alloc allocates a block of $size 32-bit words and returns the starting
-;; address of the allocated block. If $size is zero, nothing is allocated
-;; and zero is returned. The memory is grown if necessary.
-(func $alloc (export "alloc") (param $size i32) (result i32) ... )
+;; $alloc allocates a block of memory of the specified size.
+(func $alloc (export "alloc")
+    (param $size i32) ;; size of the requested block (number of 32-bit words).
+    (result i32) ;; starting address of the allocated block.
+    ...
+)
 
-;; `dealloc` deallocates the block starting at `address`.
-(func $dealloc (export "dealloc") (param $address i32) ... )
+;; $realloc reallocates a previously allocated block with a new size.
+(func $realloc (export "dealloc")
+    (param $address i32) ;; starting address of the previously allocated block.
+    (param $size i32) ;; new size of the block (number of 32-bit words).
+    (result i32)
+    ...
+)
+
+;; `dealloc` deallocates a previously allocated block.
+(func $dealloc (export "dealloc")
+    (param $address i32) ;; starting address of the block to deallocate.
+    ...
+)
 ```
