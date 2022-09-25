@@ -17,27 +17,29 @@
     ;; If $size is zero, nothing is allocated and zero is returned.
     ;; The memory is grown if necessary.
     (func $alloc (export "alloc")
-        (param $size i32) ;; size of the requested block (number of 32-bit words).
-        (result i32) ;; starting address of the allocated block.
+        (param $size i32) ;; size of the requested block (in 32-bit words)
+        (result i32) ;; address of the allocated block
 
         ;; If the requested $size is zero, just return zero.
         (if ;; $size == 0
             (i32.eqz (local.get $size))
-            ;; return 0
-            (return (i32.const 0))
+            (return (i32.const 0)) ;; return 0
         )
+
         ;; Push $next to the stack so we can return it later.
         (global.get $next)
+
         ;; Increase $next by `$size * 4` bytes.
         (global.set $next
             (i32.add
                 (global.get $next)
-                (i32.mul                    
+                (i32.mul
                     (local.get $size)
                     (i32.const 4)
                 )
             )
         )
+
         ;; Grow the memory by `($next / 65536) + 1 - memory.size`.
         ;; The expression will result in zero if we don't need to grow the
         ;; memory, otherwise it will result in the number of pages to grow by.
@@ -55,7 +57,7 @@
                         ;; Instead of a hardcoded 1 below, the "right" thing to
                         ;; do would be to check if `$next/65536` has a non-zero
                         ;; remainder and use 1 if so, and 0 otherwise:
-                        ;; 
+                        ;;
                         ;;     ;; $next % 65536 > 0
                         ;;     (i32.gt_u
                         ;;         (i32.rem_u
@@ -64,7 +66,7 @@
                         ;;         )
                         ;;         (i32.const 0)
                         ;;     )
-                        ;; 
+                        ;;
                         ;; However, hardcoding a 1 here simplifies the logic.
                         ;; The only resulting change is that if the newly
                         ;; allocated block ends exactly at a page boundary
@@ -85,20 +87,40 @@
         ;; Return the original $next (which is left in the stack).
     )
 
-    ;; $realloc reallocates a previously allocated block with a new size.
-    ;; In this minimal implementation it simply allocates a new block.
-    (func $realloc (export "realloc")
-        (param $address i32) ;; starting address of the previously allocated block.
-        (param $size i32) ;; new size of the block (number of 32-bit words).
-        (result i32)
-        
-        (call $alloc (local.get $size))
-    )
-
-    ;; `dealloc` deallocates a previously allocated block.
+    ;; $dealloc deallocates a previously allocated block.
     ;; It does nothing in this minimal implementation.
     (func $dealloc (export "dealloc")
-        (param $address i32) ;; starting address of the block to deallocate.
+        (param $address i32) ;; address of the block to deallocate
+    )
+
+    ;; $realloc reallocates a previously allocated block with a new size.
+    ;; In this minimal implementation it simply allocates a new block and copies
+    ;; the data from the old one into the new.
+    (func $realloc (export "realloc")
+        (param $address i32) ;; address of the previously allocated block
+        (param $size i32) ;; new size of the block (in 32-bit words)
+        (result i32) ;; address of the newly allocated block
+
+        (local $new i32) ;; the address of the newly allocated block
+
+        ;; Copy the contents of the old block to a new block.
+        (memory.copy
+            ;; The destination is the address of a new block that we allocate by
+            ;; calling $alloc. We store the new block's address in $new.
+            (local.tee $new (call $alloc (local.get $size)))
+             ;; The source is the address of the original block.
+            (local.get $address)
+            ;; Since we don't know the size of the original block, the number of
+            ;; bytes we'll copy is the new size in bytes i.e. $size (which is an
+            ;; amount of 32-bit words) times four bytes.
+            (i32.mul
+                (local.get $size)
+                (i32.const 4)
+            )
+        )
+
+        ;; Return the address of the new block.
+        (return (local.get $new))
     )
 
     ;; Auxiliary functions for testing.

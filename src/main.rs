@@ -34,10 +34,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let store_func = instance.exports.get_function("store").unwrap();
     let store = |a: i32, v: i32| store_func.call(&[WasmerValue::I32(a), WasmerValue::I32(v)]);
-    
+
     let load_func = instance.exports.get_function("load").unwrap();
     let load = |a: i32| load_func.call(&[WasmerValue::I32(a)]);
-    
+
     let size_func = instance.exports.get_function("size").unwrap();
     let size = || size_func.call(&[] as &[WasmerValue; 0]);
 
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // println!("size(): {:?}", size()?);
     // println!("grow(1): {:?}", grow(1)?);
     // println!("size(): {:?}", size()?);
-    
+
     // Test loading and storing
     // println!("load(0): {:?}", load(0)?);
     // println!("store(0, 1): {:?}", store(0, 1)?);
