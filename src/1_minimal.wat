@@ -17,7 +17,7 @@
     ;; If $size is zero, nothing is allocated and zero is returned.
     ;; The memory is grown if necessary.
     (func $alloc (export "alloc")
-        (param $size i32) ;; size of the requested block (in 32-bit words)
+        (param $size i32) ;; size of the requested block in bytes
         (result i32) ;; address of the allocated block
 
         ;; If the requested $size is zero, just return zero.
@@ -29,14 +29,11 @@
         ;; Push $next to the stack so we can return it later.
         (global.get $next)
 
-        ;; Increase $next by `$size * 4` bytes.
+        ;; Increase $next by `$size` bytes.
         (global.set $next
             (i32.add
                 (global.get $next)
-                (i32.mul
-                    (local.get $size)
-                    (i32.const 4)
-                )
+                (local.get $size)
             )
         )
 
@@ -48,7 +45,7 @@
         ;; to grow the memory, but it will be grown nonetheless.
         (drop
             (memory.grow
-                (i32.add
+                (i32.add ;; ($next / 65536) + 1 - memory.size
                     (i32.div_u
                         (global.get $next)
                         (i32.const 65536)
@@ -98,7 +95,7 @@
     ;; the data from the old one into the new.
     (func $realloc (export "realloc")
         (param $address i32) ;; address of the previously allocated block
-        (param $size i32) ;; new size of the block (in 32-bit words)
+        (param $size i32) ;; new size of the block in bytes
         (result i32) ;; address of the newly allocated block
 
         (local $new i32) ;; the address of the newly allocated block
@@ -108,15 +105,11 @@
             ;; The destination is the address of a new block that we allocate by
             ;; calling $alloc. We store the new block's address in $new.
             (local.tee $new (call $alloc (local.get $size)))
-             ;; The source is the address of the original block.
+            ;; The source is the address of the original block.
             (local.get $address)
             ;; Since we don't know the size of the original block, the number of
-            ;; bytes we'll copy is the new size in bytes i.e. $size (which is an
-            ;; amount of 32-bit words) times four bytes.
-            (i32.mul
-                (local.get $size)
-                (i32.const 4)
-            )
+            ;; bytes we'll copy is just $size.
+            (local.get $size)
         )
 
         ;; Return the address of the new block.

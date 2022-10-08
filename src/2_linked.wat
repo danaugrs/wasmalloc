@@ -8,9 +8,9 @@
 ;; unoptimal in terms of allocation and deallocation speed since it needs to
 ;; search the free list block by block, sometimes in its entirety.
 ;;
-;; Each block has a header with the block size (in 32-bit words) and a pointer
-;; to the next block. A block only needs a next-block pointer when it's free.
-;; Therefore we can use that space for data when the block is in use.
+;; Each block has a header with the block size in bytes and a pointer to the
+;; next block. A block only needs a next-block pointer when it's free,
+;; therefore we can use that space for data when the block is in use.
 ;;
 ;;   used block   free block
 ;;  ┌──────────┐ ┌──────────┐
@@ -118,13 +118,12 @@
                     ;; the free list that satisfies $size. Therefore we need to
                     ;; grow the memory by at least one page.
 
-                    ;; Below we grow the memory by 1 + (4 * $size + 4) / 65536
-                    ;; which simplifies to 1 + ($size + 1) / 16384 and set
-                    ;; $curr = 4 + (page size) * (old memory size), which is the
-                    ;; start of the newly grown area. We also repurpose $temp
-                    ;; and set it to the newly grown size (in number of pages).
-                    ;; We also push it to the stack via `local.tee` so it can be
-                    ;; used immediately by `memory.grow`.
+                    ;; Below we grow the memory by 1 + ($size + 4) / 65536 and
+                    ;; set $curr = 4 + (page size) * (old memory size), which is
+                    ;; the start of the newly grown area. We also repurpose
+                    ;; $temp and set it to the newly grown size (in number of
+                    ;; pages). We also push it to the stack via `local.tee` so
+                    ;; it can be used immediately by `memory.grow`.
                     (local.set $curr
                         (i32.add ;; 4 + (page size) * (old memory size)
                             (i32.const 4) ;; header
@@ -132,14 +131,14 @@
                                 (i32.const 65536) ;; page size
                                 (memory.grow ;; old memory size
                                     (local.tee $temp
-                                        (i32.add ;; 1 + ($size + 1) / 16384
+                                        (i32.add ;; 1 + ($size + 1) / 65536
                                             (i32.const 1) ;; at least one page
                                             (i32.div_u
                                                 (i32.add
                                                     (local.get $size)
                                                     (i32.const 1) ;; header
                                                 )
-                                                (i32.const 16384)
+                                                (i32.const 65536)
                                             )
                                         )
                                     )
@@ -149,15 +148,15 @@
                     )
 
                     ;; We need to set up the newly grown page(s) as a free block
-                    ;; and insert it at the end of the free list. But first we
-                    ;; check if the previous block was free, and if so, we
-                    ;; combine them both into one larger free block. To do that
-                    ;; we check if the block pointed at by $prev is indeed the
-                    ;; immediately preceding block. If not, it means there is a
-                    ;; non-free block (not part of the free list) between $prev
-                    ;; and $curr. We can do that by adding the size of $prev to
-                    ;; its address plus 4 bytes of header and then check if
-                    ;; that matches the address of $curr.
+                    ;; and insert it at the end of the free list. But if the
+                    ;; previous block was also free, we combine them both into
+                    ;; one larger free block. To do that we check if the block
+                    ;; pointed at by $prev is indeed the immediately preceding
+                    ;; block. If not, it means there is a non-free block (not
+                    ;; part of the free list) between $prev and $curr. We can do
+                    ;; that by adding the size of $prev to its address plus 4
+                    ;; bytes of header and then check if that matches the
+                    ;; address of $curr.
                     (if
                         (i32.eq ;; $curr == $prev + sizeOf($prev) + 4
                             (local.get $curr)
@@ -408,7 +407,7 @@
     ;; $realloc reallocates a previously allocated block with a new size.
     (func $realloc (export "realloc")
         (param $address i32) ;; address of the previously allocated block
-        (param $size i32) ;; new size of the block (in 32-bit words)
+        (param $size i32) ;; new size of the block in bytes
         (result i32) ;; address of the newly allocated block
 
         (local $new i32) ;; the address of the newly allocated block
@@ -444,14 +443,11 @@
             (local.get $address)
             ;; The number of bytes to copy is the size of the original block
             ;; (which is an amount of 32-bit words) times four bytes.
-            (i32.mul
-                (i32.load ;; sizeOf($address)
-                    (i32.sub
-                        (local.get $address)
-                        (i32.const 4)
-                    )
+            (i32.load ;; sizeOf($address)
+                (i32.sub
+                    (local.get $address)
+                    (i32.const 4)
                 )
-                (i32.const 4)
             )
         )
 

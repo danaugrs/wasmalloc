@@ -17,7 +17,7 @@ All implementations will be extensively commented and follow the same three-func
 ```wasm
 ;; $alloc allocates a block of memory of the specified size.
 (func $alloc (export "alloc")
-    (param $size i32) ;; size of the requested block (in 32-bit words)
+    (param $size i32) ;; size of the requested block in bytes
     (result i32) ;; address of the allocated block
     ...
 )
@@ -31,7 +31,7 @@ All implementations will be extensively commented and follow the same three-func
 ;; $realloc reallocates a previously allocated block with a new size.
 (func $realloc (export "dealloc")
     (param $address i32) ;; address of the previously allocated block
-    (param $size i32) ;; new size of the block (in 32-bit words)
+    (param $size i32) ;; new size of the block in bytes
     (result i32) ;; address of the newly allocated block
     ...
 )

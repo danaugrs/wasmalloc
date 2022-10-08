@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::env;
 use wasmtime::*;
 
 // Small program to test and interact with the WebAssembly allocators.
